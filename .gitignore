@@ -1,3 +1,15 @@
+# General output
+shell/bin/
+
+# Parser intermediate source files
+shell/input_parse/lex.yy.c
+shell/input_parse/y.tab.c
+shell/input_parse/y.tab.h
+
+# Language server
+compile_commands.json
+.cache
+
 # Prerequisites
 *.d
 
@@ -51,5 +63,5 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-# debug information files
+# Debug information files
 *.dwo

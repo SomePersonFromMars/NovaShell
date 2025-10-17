@@ -1,3 +1,10 @@
+CC?=cc
+# Automatically generate compile_commands.json
+# for a language server.
+BEAR?= 
+ifdef BEAR
+	CC:=bear --append -- $(CC)
+endif
 
 SRC_DIR=src
 OBJ_DIR=obj
@@ -16,13 +23,13 @@ OBJS:=$(addprefix $(OBJ_DIR)/,$(OBJS))
 all: check_dirs $(BIN_DIR)/mshell 
 
 $(BIN_DIR)/mshell: $(OBJS) $(OBJ_DIR)/siparse.a
-	cc $(CFLAGS) $(OBJS) $(OBJ_DIR)/siparse.a -o $@ 
+	$(CC) $(CFLAGS) $(OBJS) $(OBJ_DIR)/siparse.a -o $@ 
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
-	cc $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJ_DIR)/siparse.a:
-	$(MAKE) -C $(PARSERDIR) INSTALL_DIR=$(realpath $(OBJ_DIR)) INC_DIR=$(realpath $(INC_DIR))
+	$(MAKE) -C $(PARSERDIR) INSTALL_DIR=$(realpath $(OBJ_DIR)) INC_DIR=$(realpath $(INC_DIR)) CC="$(CC)"
 
 check_dirs:
 	test -d $(OBJ_DIR) || mkdir $(OBJ_DIR)
@@ -30,6 +37,7 @@ check_dirs:
 
 clean:
 	rm -f $(BIN_DIR)/mshell $(OBJS) 
+	rm compile_commands.json
 
 full_clean: clean
 	$(MAKE) -C $(PARSERDIR) clean
