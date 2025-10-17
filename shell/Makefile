@@ -26,7 +26,7 @@ DEFINES:=$(addprefix -D,$(DEFINES))
 CFLAGS=-I$(INC_DIR) $(DEBUG_FLAGS) $(DEFINES)
 
 
-COMMON_SRCS=utils.c builtins.c executor.c
+COMMON_SRCS=utils.c builtins.c executor.c inputhandler.c
 SHELL_SRCS=$(COMMON_SRCS) mshell.c
 TESTS_SRCS=$(COMMON_SRCS) tests.c
 SRCS=$(COMMON_SRCS) mshell.c tests.c
@@ -40,6 +40,7 @@ TESTS_OBJS:=$(addprefix $(OBJ_DIR)/,$(TESTS_OBJS))
 OBJS:=$(SRCS:.c=.o)
 OBJS:=$(addprefix $(OBJ_DIR)/,$(OBJS))
 
+.PHONY: all
 all: check_dirs $(BIN_DIR)/mshell $(BIN_DIR)/tests
 
 $(BIN_DIR)/mshell: $(SHELL_OBJS) $(OBJ_DIR)/siparse.a
@@ -54,14 +55,17 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 $(OBJ_DIR)/siparse.a:
 	$(MAKE) -C $(PARSE_DIR) INSTALL_DIR=$(realpath $(OBJ_DIR)) INC_DIR=$(realpath $(INC_DIR)) CC="$(CC)"
 
+.PHONY: check_dirs
 check_dirs:
 	test -d $(OBJ_DIR) || mkdir $(OBJ_DIR)
 	test -d $(BIN_DIR) || mkdir $(BIN_DIR)
 
+.PHONY: clean
 clean:
-	rm -f $(BIN_DIR)/mshell $(OBJS) 
-	rm compile_commands.json
+	rm -f $(BIN_DIR)/mshell $(OBJS) 2>/dev/null || true
+	rm compile_commands.json 2>/dev/null || true
 
+.PHONY: full_clean
 full_clean: clean
 	$(MAKE) -C $(PARSE_DIR) clean
 	rm -f $(OBJ_DIR)/siparse.a

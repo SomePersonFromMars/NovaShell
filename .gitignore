@@ -10,6 +10,9 @@ shell/input_parse/y.tab.h
 compile_commands.json
 .cache
 
+# IDE
+Session.vim
+
 # Prerequisites
 *.d
 

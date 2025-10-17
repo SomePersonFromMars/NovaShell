@@ -16,7 +16,7 @@ typedef struct execargs {
 } execargs;
 
 #define MAX_ARGS (MAX_LINE_LENGTH/2)
-char* argv_pool[MAX_ARGS];
+static char* argv_pool[MAX_ARGS];
 
 // Returns pointers to statically allocated pools.
 execargs
@@ -63,5 +63,5 @@ void executecommand(command *pcmd) {
         waitpid(child_pid, NULL, 0);
     }
 
-    // TODO handle redirections
+    // TODO handle redirections, background, etc.
 }

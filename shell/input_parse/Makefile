@@ -3,6 +3,7 @@ HDEPS=$(INC_DIR)/siparse.h $(INC_DIR)/config.h siparseutils.h
 
 CSRC=siparseutils.c
 
+.PHONY: all
 all: siparseutils.o y.tab.o lex.yy.o
 	ar rcs $(INSTALL_DIR)/siparse.a siparseutils.o lex.yy.o y.tab.o 
 
@@ -17,6 +18,7 @@ y.tab.o: siparse.y  $(HDEPS)
 siparseutils.o: siparseutils.c $(HDEPS)
 	$(CC) $(CFLAGS) -c $<
 
+.PHONY: clean
 clean:
 	rm -f lex.yy.c y.tab.c y.tab.h siparse.a  *.o 
-	rm compile_commands.json
+	rm compile_commands.json 2>/dev/null || true
