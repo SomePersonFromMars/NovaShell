@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -22,25 +23,20 @@ printprompt(void)
     fflush(stdout);
 }
 
-void
-skipinputline(void)
-{
-    char next_char;
-    while (
-        (bytes_read = read(STDIN_FILENO, &next_char, 1)) > 0 &&
-        next_char != '\n')
-    { }
-}
+ssize_t
+readlineormaxbuff(void)
+{ return bytes_read = read(STDIN_FILENO, input_line, MAX_LINE_LENGTH); }
 
 bool
 handletoolonginput(void)
 {
     if (input_line[bytes_read-1] != '\n') {
+        while (input_line[bytes_read-1] != '\n')
+            readlineormaxbuff();
         fputs(SYNTAX_ERROR_STR "\n", stderr);
         LOG_ERROR(
             "Input line is too long. It's longer than %d characters.",
             MAX_LINE_LENGTH);
-        skipinputline();
         return true;
     }
     return false;
@@ -64,7 +60,7 @@ inputloop(void)
     while (
         printprompt(),
         errno = 0,
-        (bytes_read = read(STDIN_FILENO, input_line, MAX_LINE_LENGTH)) > 0)
+        readlineormaxbuff() > 0)
     {	
         input_line[bytes_read] = '\0';
         if (handletoolonginput()) continue;
