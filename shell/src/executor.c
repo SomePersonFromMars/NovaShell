@@ -16,7 +16,7 @@ typedef struct execargs {
 } execargs;
 
 #define MAX_ARGS (MAX_LINE_LENGTH/2)
-static char* argv_pool[MAX_ARGS];
+static char* argv_pool[MAX_ARGS+1]; // The last one for terminating NULL
 
 // Returns pointers to statically allocated pools.
 execargs
