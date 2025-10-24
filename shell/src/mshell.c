@@ -6,6 +6,7 @@
 int
 main(int argc, char *argv[])
 {
+    inputsetup();
     inputloop();
     return 0;
 }

@@ -12,6 +12,7 @@ compile_commands.json
 
 # IDE
 Session.vim
+.gdb_history
 
 # Prerequisites
 *.d

@@ -60,9 +60,15 @@ if [ -f $SUITE_DIR/$EXPECTED_DIR/$TEST_NUMBER.err ]; then
 	result2=$?
 fi
 
-if [ $result1 -eq 0 ] && [ $result2 -eq 0 ]; 
-	then echo OK; 
-	else echo FAIL ;
+GREEN='\033[32m'
+RED='\033[31m'
+RESET='\033[0m'
+
+if [ $result1 -eq 0 ] && [ $result2 -eq 0 ]
+then
+    printf '%bOK%b\n' "$GREEN" "$RESET"
+else
+    printf '%bFAIL%b\n' "$RED" "$RESET"
 fi
 
 
