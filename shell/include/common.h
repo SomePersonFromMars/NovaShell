@@ -4,7 +4,6 @@
 #define NOP ((void)0)
 
 #ifdef DEBUGPRINT
-
     #define RESET_COLOR_CODE	"0"
     #define BLACK_COLOR_CODE	"30"
 	#define RED_COLOR_CODE		"31"
@@ -36,6 +35,15 @@
     #define LOG_ERROR(...) NOP
 
     #define LOG_BAD_ARGS(...) NOP
+#endif
+
+#ifdef DEBUG
+    #include <signal.h>
+    #define BREAKPOINT raise(SIGINT)
+    #define BREAKPOINT_IF(expr) (expr) ? (BREAKPOINT) : 0
+#else
+    #define BREAKPOINT NOP
+    #define BREAKPOINT_IF(expr) NOP
 #endif
 
 #endif /* !_COMMON_H_ */

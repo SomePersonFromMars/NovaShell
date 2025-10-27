@@ -12,6 +12,7 @@ endif
 DEBUG?=
 ifdef DEBUG
 	DEBUG_FLAGS:=-g3
+	DEFINES:=$(DEFINES) DEBUG
 endif
 
 DEBUGPRINT?=

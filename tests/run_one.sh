@@ -70,6 +70,7 @@ then
 else
     printf '%bFAIL%b\n' "$RED" "$RESET"
 fi
+echo
 
 
 if [ -f $SUITE_DIR/$POST_DIR/$TEST_NUMBER.post ]; then

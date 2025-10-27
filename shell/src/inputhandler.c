@@ -78,22 +78,40 @@ inputsetup(void)
     interactive_mode = S_ISCHR(statbuf.st_mode); // Alternative is to use isatty()
 }
 
+#ifdef DEBUG
+    int breakpoint_cnter_1 = 0;
+#endif
+
 void
 inputloop(void)
 {
     size_t line_start = 0;
-    size_t read_offset = 0; // line_start may be smaller than read_offset when line prefix move was performed.
+    size_t next_read_offset = 0; // line_start may be smaller than next_read_offset when line prefix move was performed.
     bool ignore_next_line = false;
     while (
         ignore_next_line ? NOP : printprompt(),
-        readavailableormaxbuff(read_offset) > 0)
+        readavailableormaxbuff(next_read_offset) > 0)
     {	
-        const size_t input_size = read_offset + bytes_read;
+        LOG_INFO("breakpoint_cnter_1 = %d", breakpoint_cnter_1++);
+
+        const size_t applied_read_offset = next_read_offset;
+        next_read_offset = 0;
+        const size_t input_size = applied_read_offset + bytes_read;
         input_buffer[input_size] = '\0';
 
-        LOG_INFO("read_offset = %zu, input_buffer = [%s]", read_offset, input_buffer);
+        #ifdef DEBUGPRINT
+            const int MAX_LENGTH = 80;
+            const int SIDE_LENGTH = MAX_LENGTH / 2;
+            if (input_size > MAX_LENGTH) {
+                LOG_INFO("applied_read_offset = %zu, input_buffer = [%.*s \n---------------------\n %.*s]", applied_read_offset, SIDE_LENGTH, input_buffer, SIDE_LENGTH, &input_buffer[input_size-SIDE_LENGTH]);
+            } else {
+                LOG_INFO("applied_read_offset = %zu, input_buffer = [%s]", applied_read_offset, input_buffer);
+            }
+        #endif
 
-        size_t line_end = findlineend(read_offset);
+        BREAKPOINT_IF(strcmp(input_buffer, "ers/pm/type.h") == 0);
+
+        size_t line_end = findlineend(applied_read_offset);
         if (line_end >= MAX_LINE_LENGTH) {
             if (!ignore_next_line) {
                 fputs(SYNTAX_ERROR_STR "\n", stderr);
@@ -101,7 +119,7 @@ inputloop(void)
             }
 
             ignore_next_line = true;
-            read_offset = 0;
+            next_read_offset = 0;
             continue;
         }
 
@@ -111,16 +129,17 @@ inputloop(void)
 
             if (line_end >= MAX_LINE_LENGTH) {
                 const size_t line_len = (MAX_LINE_LENGTH-1) - (line_start-1);
+                // BREAKPOINT_IF(strcmp(&input_buffer[line_start], "cat servers/fs/select.h serv") == 0);
                 assert(line_start > 0);
                 memmove(input_buffer, input_buffer+line_start, line_len);
 
-                read_offset = line_len;
+                next_read_offset = line_len;
                 line_start = 0;
                 break;
             } else if (line_end >= input_size) {
                 const size_t line_len = (input_size-1) - (line_start-1);
 
-                read_offset = line_end;
+                next_read_offset = line_end;
                 break;
             }
 
@@ -129,9 +148,10 @@ inputloop(void)
             } else {
                 input_buffer[line_end] = '\0';
                 LOG_INFO("Found line: [%s]", &input_buffer[line_start]);
+                // BREAKPOINT_IF(strcmp(&input_buffer[line_start], "cat servers/pm/type.h") == 0 && line_end == 2019);
                 parsed_line = parseline(&input_buffer[line_start]);
                 #ifdef DEBUGPRINT
-                    printparsedline(parsed_line);
+                    // printparsedline(parsed_line);
                 #endif
                 command *com = pickfirstcommand(parsed_line);
                 executecommand(com);
@@ -140,19 +160,8 @@ inputloop(void)
             line_start = line_end+1;
             line_end = line_start;
         }
-        line_start = 0;
-        read_offset = 0;
-
-        // verify whether input lines are not too long
-            // ignore_next_line = false
-            // continue global input loop
-        // while not analyzed full buffer
-            // find next line
-            // verify whether last line was read fully
-                // move remaining to start
-                // set read offset
-                // continue global input loop
-            // parse next line
+        if (line_start >= input_size)
+            line_start = 0;
     }
 
     if (bytes_read < 0) {

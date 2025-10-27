@@ -1,5 +1,6 @@
 # General output
 shell/bin/
+*.tmp
 
 # Parser intermediate source files
 shell/input_parse/lex.yy.c

@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <string.h>
 
 typedef struct execargs {
     size_t argc;
@@ -43,6 +44,8 @@ void executecommand(command *pcmd) {
 
     execargs exec_args = getexecargsfromcommand(pcmd);
     pid_t child_pid = fork();
+    BREAKPOINT_IF(strcmp(exec_args.argv[0], "ers/pm/type.h") == 0);
+    BREAKPOINT_IF(strcmp(exec_args.argv[0], "............") == 0);
     if (child_pid == 0) {
         execvp(exec_args.argv[0], exec_args.argv);
         switch (errno) {
