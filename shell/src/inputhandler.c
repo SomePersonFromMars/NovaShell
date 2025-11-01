@@ -109,33 +109,30 @@ inputloop(void)
             }
         #endif
 
-        BREAKPOINT_IF(strcmp(input_buffer, "ers/pm/type.h") == 0);
-
-        size_t line_end = findlineend(applied_read_offset);
-        if (line_end >= MAX_LINE_LENGTH) {
-            if (!ignore_next_line) {
-                fputs(SYNTAX_ERROR_STR "\n", stderr);
-                LOG_ERROR("Input line is too long. It's longer than %d characters.", MAX_LINE_LENGTH);
-            }
-
-            ignore_next_line = true;
-            next_read_offset = 0;
-            continue;
-        }
-
-        while (line_start < input_size) // Line should be at least 1 character
-        {
+        size_t line_end = applied_read_offset; // Line end search starts here
+        while (line_start < input_size) { // Line should be at least 1 character
             line_end = findlineend(line_end);
 
             if (line_end >= MAX_LINE_LENGTH) {
                 const size_t line_len = (MAX_LINE_LENGTH-1) - (line_start-1);
-                // BREAKPOINT_IF(strcmp(&input_buffer[line_start], "cat servers/fs/select.h serv") == 0);
-                assert(line_start > 0);
-                memmove(input_buffer, input_buffer+line_start, line_len);
+                if (line_len < MAX_LINE_LENGTH) {
+                    assert(line_start > 0);
+                    memmove(input_buffer, input_buffer+line_start, line_len);
 
-                next_read_offset = line_len;
-                line_start = 0;
-                break;
+                    next_read_offset = line_len;
+                    line_start = 0;
+                    break;
+                } else {
+                    assert(line_start == 0);
+                    if (!ignore_next_line) {
+                        fputs(SYNTAX_ERROR_STR "\n", stderr);
+                        LOG_ERROR("Input line is too long. line_start = %zu, line_end = %zu. It's longer than %d characters.", line_start, line_end, MAX_LINE_LENGTH);
+                    }
+
+                    ignore_next_line = true;
+                    next_read_offset = 0;
+                    break;
+                }
             } else if (line_end >= input_size) {
                 const size_t line_len = (input_size-1) - (line_start-1);
 
@@ -148,7 +145,6 @@ inputloop(void)
             } else {
                 input_buffer[line_end] = '\0';
                 LOG_INFO("Found line: [%s]", &input_buffer[line_start]);
-                // BREAKPOINT_IF(strcmp(&input_buffer[line_start], "cat servers/pm/type.h") == 0 && line_end == 2019);
                 parsed_line = parseline(&input_buffer[line_start]);
                 #ifdef DEBUGPRINT
                     // printparsedline(parsed_line);
