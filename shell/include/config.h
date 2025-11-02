@@ -5,6 +5,7 @@
 
 #define SYNTAX_ERROR_STR "Syntax error."
 
+#define BUILTIN_FAILURE 1
 #define EXEC_FAILURE 127
 
 #define PROMPT_STR "$ "

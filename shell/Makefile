@@ -31,7 +31,7 @@ DEFINES:=$(addprefix -D,$(DEFINES))
 CFLAGS=-I$(INC_DIR) $(DEBUG_FLAGS) $(DEFINES)
 
 
-COMMON_SRCS=utils.c builtins.c executor.c inputhandler.c
+COMMON_SRCS=utils.c builtins.c executor.c inputhandler.c argsparser.c
 SHELL_SRCS=$(COMMON_SRCS) mshell.c
 TESTS_SRCS=$(COMMON_SRCS) tests.c
 SRCS=$(COMMON_SRCS) mshell.c tests.c

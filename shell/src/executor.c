@@ -1,5 +1,6 @@
 #include "executor.h"
 
+#include "builtins.h"
 #include "config.h"
 #include "siparse.h"
 #include "common.h"
@@ -28,35 +29,29 @@ getexecargsfromcommand(command *pcmd)
     r.argv = argv_pool;
 
 	argseq * argseq = pcmd->args;
-	do{
+	do {
 		r.argv[r.argc++] = argseq->arg;
 		argseq= argseq->next;
-	}while(argseq!=pcmd->args);
+	} while(argseq!=pcmd->args);
     r.argv[r.argc] = NULL;
     return r;
 }
 
-void executecommand(command *pcmd) {
-    if (pcmd==NULL){
-        // Do nothing.
-        return;
-    }
-
-    execargs exec_args = getexecargsfromcommand(pcmd);
+void
+executeexternalcommand(char **argv)
+{
     pid_t child_pid = fork();
-    BREAKPOINT_IF(strcmp(exec_args.argv[0], "ers/pm/type.h") == 0);
-    BREAKPOINT_IF(strcmp(exec_args.argv[0], "............") == 0);
     if (child_pid == 0) {
-        execvp(exec_args.argv[0], exec_args.argv);
+        execvp(argv[0], argv);
         switch (errno) {
             case ENOENT:
-                fprintf(stderr, "%s: no such file or directory\n", exec_args.argv[0]);
+                fprintf(stderr, "%s: no such file or directory\n", argv[0]);
                 break;
             case EACCES:
-                fprintf(stderr, "%s: permission denied\n", exec_args.argv[0]);
+                fprintf(stderr, "%s: permission denied\n", argv[0]);
                 break;
             default:
-                fprintf(stderr, "%s: exec error\n", exec_args.argv[0]);
+                fprintf(stderr, "%s: exec error\n", argv[0]);
                 break;
         }
         exit(EXEC_FAILURE);
@@ -65,6 +60,24 @@ void executecommand(command *pcmd) {
     } else {
         waitpid(child_pid, NULL, 0);
     }
+}
+
+void
+executecommand(command *pcmd)
+{
+    if (pcmd==NULL){
+        // Do nothing.
+        return;
+    }
+
+    execargs exec_args = getexecargsfromcommand(pcmd);
+    builtin_pair *builtin_command = getbuiltincommand(exec_args.argv[0]);
+
+    if (builtin_command != NULL)
+        builtin_command->fun(exec_args.argv);
+    else
+        executeexternalcommand(exec_args.argv);
+
 
     // TODO handle redirections, background, etc.
 }

@@ -10,4 +10,6 @@ typedef struct {
 
 extern builtin_pair builtins_table[];
 
+builtin_pair* getbuiltincommand(const char * name);
+
 #endif /* !_BUILTINS_H_ */

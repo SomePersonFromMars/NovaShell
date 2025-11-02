@@ -43,33 +43,6 @@ findlineend(size_t offset)
     return strchrnul(input_buffer+offset, '\n') - input_buffer;
 }
 
-bool
-handletoolonginput(void)
-{
-    if (input_buffer[bytes_read-1] != '\n') {
-        while (input_buffer[bytes_read-1] != '\n')
-            readavailableormaxbuff(0);
-        fputs(SYNTAX_ERROR_STR "\n", stderr);
-        LOG_ERROR(
-            "Input line is too long. It's longer than %d characters.",
-            MAX_LINE_LENGTH);
-        return true;
-    }
-    return false;
-}
-
-bool
-handleparsingerrors(void)
-{
-    if (parsed_line == NULL) {
-        fputs(SYNTAX_ERROR_STR "\n", stderr);
-        LOG_ERROR(
-            "Parsing error.");
-        return true;
-    }
-    return false;
-}
-
 void
 inputsetup(void)
 {
@@ -127,6 +100,7 @@ inputloop(void)
                     if (!ignore_next_line) {
                         fputs(SYNTAX_ERROR_STR "\n", stderr);
                         LOG_ERROR("Input line is too long. line_start = %zu, line_end = %zu. It's longer than %d characters.", line_start, line_end, MAX_LINE_LENGTH);
+                        fflush(stderr);
                     }
 
                     ignore_next_line = true;
