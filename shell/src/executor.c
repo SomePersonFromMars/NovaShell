@@ -197,6 +197,7 @@ executecommand(command *pcmd, int infd, int outfd)
         // Redirections for builtin commands are undefined.
         descr.infd = infd = STDIN_FILENO;
         descr.outfd = outfd = STDOUT_FILENO;
+        descr.good = true;
     } else {
         descr = getinoutdescriptorsfromcommand(pcmd);
     }
@@ -227,7 +228,7 @@ executecommand(command *pcmd, int infd, int outfd)
 static bool
 iscommandvalid(command * command)
 {
-    if (!command) return false;
+    if (!command) return true; // Command empty, which is valid.
     if (!command->args) return false;
     if (!command->args->arg) return false;
     if (command->args->arg[0] == '\0') return false;
@@ -238,13 +239,22 @@ static bool
 ispipelinevalid(pipeline * pipeline) {
     if (!pipeline) return false;
 
+    int pipeline_len = 0;
+    int empty_commands_cnt = 0;
+
     commandseq * start = pipeline->commands;
     commandseq * cs = start;
     do {
         if (!cs || !iscommandvalid(cs->com))
             return false;
+        if (!cs->com)
+            ++empty_commands_cnt;
+        ++pipeline_len;
         cs = cs->next;
     } while (cs != start);
+
+    if (pipeline_len > 1 && empty_commands_cnt >= 1)
+        return false;
 
     return true;
 }
@@ -292,6 +302,7 @@ executepipeline(pipeline * pipeline)
             outfd = pipefd[1];
         }
 
+        assert(infd != -1);
         const pid_t child_pid = executecommand(cs->com, infd, outfd);
         if (child_pid > 0) ++children_cnt;
 
