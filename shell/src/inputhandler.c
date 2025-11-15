@@ -121,7 +121,7 @@ inputloop(void)
                 LOG_INFO("Found line: [%s]", &input_buffer[line_start]);
                 parsed_line = parseline(&input_buffer[line_start]);
                 #ifdef DEBUGPRINT
-                    // printparsedline(parsed_line);
+                    printparsedline(parsed_line);
                 #endif
                 command *com = pickfirstcommand(parsed_line);
                 executecommand(com);
