@@ -123,8 +123,7 @@ inputloop(void)
                 #ifdef DEBUGPRINT
                     printparsedline(parsed_line);
                 #endif
-                command *com = pickfirstcommand(parsed_line);
-                executecommand(com);
+                executeline(parsed_line);
             }
 
             line_start = line_end+1;
