@@ -14,18 +14,11 @@
 #include <string.h>
 #include <assert.h>
 #include <fcntl.h>
-#include <stdbool.h>
 
 typedef struct execargs {
     size_t argc;
     char** argv;
 } execargs;
-
-typedef struct inoutdescriptors {
-    int infd;
-    int outfd;
-    bool good;
-} inoutdescriptors;
 
 #define DEFAULT_FILE_MODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH)
 #define MAX_ARGS ((MAX_LINE_LENGTH+1)/2)
@@ -102,6 +95,7 @@ getinoutdescriptorsfromcommand(command *pcmd)
     descr.infd = STDIN_FILENO;
     descr.outfd = STDOUT_FILENO;
     descr.good = true;
+    descr.parent_descriptors = NULL;
 
     if (input_filename != NULL) {
         errno = 0;
@@ -127,6 +121,15 @@ getinoutdescriptorsfromcommand(command *pcmd)
     return descr;
 }
 
+static inline void
+closeifdifferentandhandleerror(int fd, int noclosefd)
+{
+    if (fd != noclosefd) {
+        const int r = close(fd);
+        if (r != 0) LOG_ERROR("close() error.");
+    }
+}
+
 // Execute with a suggested input and output file descriptors.
 // Close the file descriptors once passed to the child.
 // Returns the the child's pid if it has been created successfully, -1 otherwise.
@@ -138,13 +141,19 @@ executeexternalcommand(char **argv, inoutdescriptors descr)
 
     pid_t child_pid = fork();
     if (child_pid == 0) {
+        while (descr.parent_descriptors && *descr.parent_descriptors != -1) {
+            closeifdifferentandhandleerror(*descr.parent_descriptors, 0);
+            ++descr.parent_descriptors;
+        }
         if (infd != STDIN_FILENO) {
             const int newfd = dup2(infd, STDIN_FILENO);
             assert(newfd == STDIN_FILENO);
+            closeifdifferentandhandleerror(infd, STDIN_FILENO);
         }
         if (outfd != STDOUT_FILENO) {
             const int newfd = dup2(outfd, STDOUT_FILENO);
             assert(newfd == STDOUT_FILENO);
+            closeifdifferentandhandleerror(outfd, STDIN_FILENO);
         }
 
         execvp(argv[0], argv);
@@ -166,14 +175,8 @@ executeexternalcommand(char **argv, inoutdescriptors descr)
         // Do nothing
     }
 
-    if (infd != STDIN_FILENO) {
-        const int r = close(infd);
-        if (r != 0) LOG_ERROR("close() error.");
-    }
-    if (outfd != STDOUT_FILENO) {
-        const int r = close(outfd);
-        if (r != 0) LOG_ERROR("close() error.");
-    }
+    closeifdifferentandhandleerror(infd, STDIN_FILENO);
+    closeifdifferentandhandleerror(outfd, STDOUT_FILENO);
 
     return child_pid;
 }
@@ -183,8 +186,9 @@ executeexternalcommand(char **argv, inoutdescriptors descr)
 // Returns the the child's pid if it has been created successfully, -1 otherwise.
 // When a builtin command was run or the command was empty, 0 is returned.
 pid_t
-executecommand(command *pcmd, int infd, int outfd)
+executecommand(command *pcmd, inoutdescriptors suggested_descr)
 {
+    if (!suggested_descr.good) return -1;
     if (pcmd==NULL){
         // Do nothing.
         return 0;
@@ -195,27 +199,28 @@ executecommand(command *pcmd, int infd, int outfd)
     inoutdescriptors descr;
     if (builtin_command) {
         // Redirections for builtin commands are undefined.
-        descr.infd = infd = STDIN_FILENO;
-        descr.outfd = outfd = STDOUT_FILENO;
+        closeifdifferentandhandleerror(suggested_descr.infd, STDIN_FILENO);
+        closeifdifferentandhandleerror(suggested_descr.outfd, STDOUT_FILENO);
+        descr.infd = suggested_descr.infd = STDIN_FILENO;
+        descr.outfd = suggested_descr.outfd = STDOUT_FILENO;
         descr.good = true;
+        descr.parent_descriptors = NULL;
     } else {
         descr = getinoutdescriptorsfromcommand(pcmd);
     }
 
     if (!descr.good) return -1;
     // Assure I/O redirections precedence.
-    if (descr.infd == STDIN_FILENO) // If unset.
-        descr.infd = infd;
-    else if (infd != STDIN_FILENO) { // If set, ignore it.
-        const int r = close(infd);
-        if (r != 0) LOG_ERROR("close() error.");
-    }
-    if (descr.outfd == STDOUT_FILENO) // If unset.
-        descr.outfd = outfd;
-    else if (outfd != STDOUT_FILENO) { // If set, ignore it.
-        const int r = close(outfd);
-        if (r != 0) LOG_ERROR("close() error.");
-    }
+    if (descr.infd == STDIN_FILENO) // If unset, replace it.
+        descr.infd = suggested_descr.infd;
+    else closeifdifferentandhandleerror(suggested_descr.infd, STDIN_FILENO);
+
+    if (descr.outfd == STDOUT_FILENO) // If unset, replace it.
+        descr.outfd = suggested_descr.outfd;
+    else closeifdifferentandhandleerror(suggested_descr.outfd, STDOUT_FILENO);
+
+    assert(!descr.parent_descriptors);
+    descr.parent_descriptors = suggested_descr.parent_descriptors;
 
     if (builtin_command != NULL) {
         builtin_command->fun(exec_args.argv);
@@ -303,8 +308,16 @@ executepipeline(pipeline * pipeline)
         }
 
         assert(infd != -1);
-        const pid_t child_pid = executecommand(cs->com, infd, outfd);
-        if (child_pid > 0) ++children_cnt;
+        {
+            inoutdescriptors descr;
+            descr.infd = infd;
+            descr.outfd = outfd;
+            descr.good = true;
+            int parent_descriptors[] = { new_infd, -1 };
+            descr.parent_descriptors = parent_descriptors;
+            const pid_t child_pid = executecommand(cs->com, descr);
+            if (child_pid > 0) ++children_cnt;
+        }
 
         infd = new_infd;
         cs = cs->next;
