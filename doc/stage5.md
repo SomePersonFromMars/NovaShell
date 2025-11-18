@@ -28,11 +28,8 @@
 
 ### **Example Session**
 
-    $ sleep 20 \
-      sleep 21 \
-      sleep 22 &
-    $ ps ax \
-      grep sleep
+    $ sleep 20 | sleep 21 | sleep 22 &
+    $ ps ax | grep sleep
      580 ? 0:00 sleep TERM=xterm
      581 ? 0:00 sleep TERM=xterm
      582 ? 0:00 sleep TERM=xterm
@@ -41,17 +38,13 @@
     Background process 580 terminated. (exited with status 0)
     Background process 581 terminated. (exited with status 0)
     Background process 582 terminated. (exited with status 0)
-    $ sleep 10 \
-      sleep 10 \
-      sleep 10 &
+    $ sleep 10 | sleep 10 | sleep 10 &
     $ sleep 30    # (this sleep should not be interrupted earlier than after 30s)
     Background process 587 terminated. (exited with status 0)
     Background process 588 terminated. (exited with status 0)
     Background process 589 terminated. (exited with status 0)
-    $ 10 \
-      sleep 10 \
-      sleep 10 &
-    $ sleep 1000  # (from another terminal, check that there are no zombie processes after at least 10s but before sleep 1000 ends)
+    $ sleep 10 | sleep 10 | sleep 10 &
+    $ sleep 1000  # (from another terminal, check that there are no zombie processes after at least 10s but before `sleep 1000` ends)
     (CTRL-C) (should interrupt sleep 1000)
     Background process 591 terminated. (exited with status 0)
     Background process 592 terminated. (exited with status 0)
@@ -59,8 +52,7 @@
     $ sleep 1000 &
     $ sleep 10
     (CTRL-C) (should interrupt sleep 10 but not sleep 1000)
-    $ ps ax \
-      grep sleep
+    $ ps ax | grep sleep
     595 ? 0:00 sleep TERM=xterm
     598 p1 0:00 grep sleep
     $ /bin/kill -SIGINT 595
