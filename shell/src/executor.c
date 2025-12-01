@@ -1,5 +1,6 @@
 #include "executor.h"
 
+#include "subprocessesmanager.h"
 #include "builtins.h"
 #include "config.h"
 #include "siparse.h"
@@ -15,16 +16,17 @@
 #include <assert.h>
 #include <fcntl.h>
 
+#define DEFAULT_FILE_MODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH)
+#define MAX_ARGS ((MAX_LINE_LENGTH+1)/2)
+
 typedef struct execargs {
     size_t argc;
     char** argv;
 } execargs;
 
-#define DEFAULT_FILE_MODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH)
-#define MAX_ARGS ((MAX_LINE_LENGTH+1)/2)
 static char* argv_pool[MAX_ARGS+1]; // The last one for terminating NULL
 
-// Returns pointers to statically allocated pools.
+// Returns pointers to statically allocated pool.
 execargs
 getexecargsfromcommand(command *pcmd)
 {
@@ -134,13 +136,18 @@ closeifdifferentandhandleerror(int fd, int noclosefd)
 // Close the file descriptors once passed to the child.
 // Returns the the child's pid if it has been created successfully, -1 otherwise.
 pid_t
-executeexternalcommand(char **argv, inoutdescriptors descr)
+executeexternalcommand(char **argv, inoutdescriptors descr, bool new_session)
 {
     const int infd = descr.infd;
     const int outfd = descr.outfd;
 
     pid_t child_pid = fork();
     if (child_pid == 0) {
+        revertdefaultsignalhandlers();
+
+        if (setsid() == -1)
+            LOG_ERROR("Error while creating a new session");
+
         while (descr.parent_descriptors && *descr.parent_descriptors != -1) {
             closeifdifferentandhandleerror(*descr.parent_descriptors, 0);
             ++descr.parent_descriptors;
@@ -186,7 +193,7 @@ executeexternalcommand(char **argv, inoutdescriptors descr)
 // Returns the the child's pid if it has been created successfully, -1 otherwise.
 // When a builtin command was run or the command was empty, 0 is returned.
 pid_t
-executecommand(command *pcmd, inoutdescriptors suggested_descr)
+executecommand(command *pcmd, inoutdescriptors suggested_descr, bool new_session)
 {
     if (!suggested_descr.good) return -1;
     if (pcmd==NULL){
@@ -223,10 +230,11 @@ executecommand(command *pcmd, inoutdescriptors suggested_descr)
     descr.parent_descriptors = suggested_descr.parent_descriptors;
 
     if (builtin_command != NULL) {
+        assert(!new_session);
         builtin_command->fun(exec_args.argv);
         return 0;
     } else {
-        return executeexternalcommand(exec_args.argv, descr);
+        return executeexternalcommand(exec_args.argv, descr, new_session);
     }
 }
 
@@ -240,9 +248,10 @@ iscommandvalid(command * command)
     return true;
 }
 
-static bool
-ispipelinevalid(pipeline * pipeline) {
-    if (!pipeline) return false;
+// Returns -1 when the pipeline is invalid
+static int
+getpipelinelen(pipeline * pipeline) {
+    if (!pipeline) return -1;
 
     int pipeline_len = 0;
     int empty_commands_cnt = 0;
@@ -251,7 +260,7 @@ ispipelinevalid(pipeline * pipeline) {
     commandseq * cs = start;
     do {
         if (!cs || !iscommandvalid(cs->com))
-            return false;
+            return -1;
         if (!cs->com)
             ++empty_commands_cnt;
         ++pipeline_len;
@@ -259,9 +268,9 @@ ispipelinevalid(pipeline * pipeline) {
     } while (cs != start);
 
     if (pipeline_len > 1 && empty_commands_cnt >= 1)
-        return false;
+        return -1;
 
-    return true;
+    return pipeline_len;
 }
 
 static bool
@@ -271,7 +280,7 @@ islinevalid(pipelineseq * line)
 
     pipelineseq * ps = line;
     do {
-        if (!ps || !ispipelinevalid(ps->pipeline))
+        if (!ps || getpipelinelen(ps->pipeline) == -1)
             return false;
         ps = ps->next;
     } while (ps != line);
@@ -283,13 +292,16 @@ void
 executepipeline(pipeline * pipeline)
 {
     assert(pipeline);
-    if (pipeline->flags & INBACKGROUND) {
-        LOG_ERROR("Background execution unimplemented.");
-        return;
-    }
+    const bool background_pipeline = (pipeline->flags & INBACKGROUND);
+
+    int pipeline_len = getpipelinelen(pipeline);
+    assert(pipeline_len >= 0);
+    const int fg_children_buffer_size = (background_pipeline ? 0 : pipeline_len);
+
+    pid_t fg_children[fg_children_buffer_size+1];
+    fg_children[fg_children_buffer_size] = 0;
 
     int children_cnt = 0;
-
     int infd = STDIN_FILENO;
     commandseq * start = pipeline->commands;
     commandseq * cs = start;
@@ -315,7 +327,10 @@ executepipeline(pipeline * pipeline)
             descr.good = true;
             int parent_descriptors[] = { new_infd, -1 };
             descr.parent_descriptors = parent_descriptors;
-            const pid_t child_pid = executecommand(cs->com, descr);
+            const pid_t child_pid = executecommand(cs->com, descr, background_pipeline);
+            if (!background_pipeline)
+                fg_children[children_cnt] = child_pid;
+
             if (child_pid > 0) ++children_cnt;
         }
 
@@ -323,10 +338,9 @@ executepipeline(pipeline * pipeline)
         cs = cs->next;
     } while (cs != start);
 
-    while (children_cnt--) {
-        const pid_t r = wait(NULL);
-        assert(r != -1);
-    }
+    const int fg_children_cnt = (background_pipeline ? 0 : children_cnt);
+    setforegroundprocesses(fg_children, fg_children_cnt);
+    waitforforegroundprocessestofinish();
 }
 
 void

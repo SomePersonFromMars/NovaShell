@@ -14,6 +14,6 @@ typedef struct inoutdescriptors {
 } inoutdescriptors;
 
 void executeline(pipelineseq * line);
-pid_t executecommand(command *pcmd, inoutdescriptors suggested_descr);
+pid_t executecommand(command *pcmd, inoutdescriptors suggested_descr, bool new_session);
 
 #endif /* !_EXECUTOR_H_ */

@@ -15,6 +15,7 @@
 #include "siparse.h"
 #include "utils.h"
 
+#include "subprocessesmanager.h"
 #include "executor.h"
 
 static pipelineseq * parsed_line;
@@ -26,6 +27,7 @@ void
 printprompt(void)
 {
     if (!interactive_mode) return;
+    printpendingbgchildrenstatuses();
     fputs(PROMPT_STR, stdout);
     fflush(stdout);
 }
@@ -132,6 +134,8 @@ inputloop(void)
         if (line_start >= input_size)
             line_start = 0;
     }
+    if (interactive_mode)
+        fputs("\n", stdout);
 
     if (bytes_read < 0) {
         LOG_ERROR("read() set errno = %d.", errno);
