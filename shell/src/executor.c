@@ -145,7 +145,7 @@ executeexternalcommand(char **argv, inoutdescriptors descr, bool new_session)
     if (child_pid == 0) {
         revertdefaultsignalhandlers();
 
-        if (setsid() == -1)
+        if (new_session && setsid() == -1)
             LOG_ERROR("Error while creating a new session");
 
         while (descr.parent_descriptors && *descr.parent_descriptors != -1) {
@@ -340,6 +340,10 @@ executepipeline(pipeline * pipeline)
 
     const int fg_children_cnt = (background_pipeline ? 0 : children_cnt);
     setforegroundprocesses(fg_children, fg_children_cnt);
+    #ifdef DEBUG_PRINT
+        for (int i = 0; i < fg_children_cnt; ++i)
+            LOG_EXPR_INT(fg_children[i]);        
+    #endif
     waitforforegroundprocessestofinish();
 }
 
@@ -351,6 +355,7 @@ executeline(pipelineseq * line)
 		return;
 	}
 
+    LOG_OPEN_FDS_COUNT();
 	pipelineseq * ps = line;
 	do {
         executepipeline(ps->pipeline);

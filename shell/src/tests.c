@@ -3,8 +3,7 @@
 #include "siparse.h"
 #include "utils.h"
 
-int
-main(int argc, char *argv[])
+void testparser(void)
 {
 	pipelineseq * parsed_line;
 	command *com;
@@ -24,4 +23,10 @@ main(int argc, char *argv[])
 	printf("\n");
 	com = pickfirstcommand(parsed_line);
 	printcommand(com,1);
+}
+
+int
+main(int argc, char *argv[])
+{
+    testparser();
 }

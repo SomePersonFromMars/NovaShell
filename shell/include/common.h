@@ -3,10 +3,14 @@
 
 #include <limits.h>
 
+int countopenfds(void);
+int issignalblocked(int signo);
+
 #define INVALID_ID SIZE_MAX
 #define NOP ((void)0)
 
 #ifdef DEBUGPRINT
+    #include <stdio.h>
     #define RESET_COLOR_CODE	"0"
     #define BLACK_COLOR_CODE	"30"
 	#define RED_COLOR_CODE		"31"
@@ -32,12 +36,18 @@
     #define LOG_ERROR(fmt, ...) DEBUG_COLOR_PRINT(RED_COLOR_CODE, "ERROR: " fmt, ##__VA_ARGS__)
 
     #define LOG_BAD_ARGS() LOG_ERROR("Bad function arguments.")
+
+    #define LOG_OPEN_FDS_COUNT() LOG_INFO("Open file descriptors count: %d.", countopenfds())
+    #define LOG_EXPR_INT(expr) LOG_INFO(#expr " = %d", expr)
 #else
     #define DEBUG_PRINT(...) NOP
     #define LOG_INFO(...) NOP
     #define LOG_ERROR(...) NOP
 
     #define LOG_BAD_ARGS(...) NOP
+
+    #define LOG_OPEN_FDS_COUNT() NOP
+    #define LOG_EXPR_INT(expr) NOP
 #endif
 
 #ifdef DEBUG

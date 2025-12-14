@@ -125,6 +125,7 @@ inputloop(void)
                 #ifdef DEBUGPRINT
                     printparsedline(parsed_line);
                 #endif
+                LOG_OPEN_FDS_COUNT();
                 executeline(parsed_line);
             }
 

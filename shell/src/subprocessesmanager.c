@@ -1,6 +1,8 @@
 #include "subprocessesmanager.h"
+#include "common.h"
 
 #include <bits/types/sigset_t.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <stdbool.h>
@@ -12,7 +14,7 @@
 typedef struct childstatus {
     pid_t pid;
     int signal_received;
-    bool exited;
+    bool terminated_by_signal;
     int exit_status;
 } childstatus;
 
@@ -35,8 +37,11 @@ blocksigchld(void)
     sigset_t temporary_set;
     sigemptyset(&temporary_set);
 
-    if (sigchld_block_counter++ == 0)
+    if (sigchld_block_counter++ == 0) {
         sigaddset(&temporary_set, SIGCHLD);
+        // LOG_EXPR_INT(sigismember(&temporary_set, SIGCHLD));
+        LOG_INFO("Blocking SIGCHLD.");
+    }
 
     sigprocmask(SIG_BLOCK, &temporary_set, &original_set);
     return original_set;
@@ -46,6 +51,8 @@ void
 unblocksigchld(const sigset_t *original_set)
 {
     if (--sigchld_block_counter == 0) {
+        LOG_INFO("Unblocking SIGCHLD.");
+        assert(sigismember(original_set, SIGCHLD) == 0);
         sigprocmask(SIG_SETMASK, original_set, NULL);
     }
 }
@@ -117,7 +124,7 @@ printpendingbgchildrenstatuses(void)
     const sigset_t original_set = blocksigchld();
     childstatus *status;
     while ((status = getpendingbgchildstatus())) {
-        if (status->exited) {
+        if (status->terminated_by_signal) {
             fprintf(stdout,
                 "Background process %d terminated. (exited with status %d)\n",
                 status->pid, status->exit_status);
@@ -133,31 +140,28 @@ printpendingbgchildrenstatuses(void)
 void
 chldsigaction(int sig, siginfo_t *info, void *ucontext)
 {
-    assert(sig == SIGCHLD);
     ++sigchld_block_counter;
+    LOG_EXPR_INT(issignalblocked(SIGCHLD));
+    assert(sig == SIGCHLD);
 
-    const pid_t child_pid = info->si_pid;
-    const int signal_child_received = info->si_code;
-    const bool child_exited = (info->si_code == CLD_EXITED);
-    const int child_exit_status = info->si_status;
+    pid_t child_pid;
+    int wstatus;
+    while ((child_pid = waitpid(-1, &wstatus, WNOHANG)) > 0) {
+        LOG_INFO("child_pid = %d", child_pid);
+        childstatus new_child_status;
+        new_child_status.pid = child_pid;
+        new_child_status.terminated_by_signal = WIFSIGNALED(wstatus);
+        new_child_status.signal_received = new_child_status.terminated_by_signal ? WTERMSIG(wstatus) : 0;
+        new_child_status.exit_status = WIFEXITED(wstatus) ? WEXITSTATUS(wstatus) : 1;
 
-    pid_t r = waitpid(child_pid, NULL, 0);
-    assert(r == child_pid);
-
-    childstatus new_child_status;
-    new_child_status.pid = child_pid;
-    new_child_status.signal_received = signal_child_received;
-    new_child_status.exited = child_exited;
-    new_child_status.exit_status = child_exit_status;
-
-    const bool fg_child = isforegroundprocess(child_pid);
-    if (fg_child) {
-        // TODO FIXME Assuming that the child has exited/terminated/etc. in some way.
-        --running_fg_children_cnt;
-    } else {
-        addpendingbgchildstatus(new_child_status);
+        const bool fg_child = isforegroundprocess(child_pid);
+        if (fg_child) {
+            // TODO FIXME Assuming that the child has exited/terminated/etc. in some way.
+            --running_fg_children_cnt;
+        } else {
+            addpendingbgchildstatus(new_child_status);
+        }
     }
-
     --sigchld_block_counter;
 }
 
@@ -189,9 +193,17 @@ revertdefaultsignalhandlers(void)
 void
 waitforforegroundprocessestofinish(void)
 {
+    LOG_INFO("Before block.");
+    LOG_EXPR_INT(issignalblocked(SIGCHLD));
     sigset_t original_set = blocksigchld();
+    LOG_INFO("After block.");
+    LOG_EXPR_INT(issignalblocked(SIGCHLD));
     while (running_fg_children_cnt > 0) {
+        LOG_INFO("Before iteration.");
+        LOG_EXPR_INT(issignalblocked(SIGCHLD));
+        LOG_EXPR_INT(sigismember(&original_set, SIGCHLD));
         sigsuspend(&original_set);
+        LOG_INFO("After suspend.");
     }
     unblocksigchld(&original_set);
 }
