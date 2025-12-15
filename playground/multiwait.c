@@ -36,7 +36,7 @@ sigchldaction(int sig, siginfo_t *info, void *ucontext)
         LOG_EXPR_INT(child_pid);
         --running_fg_children_cnt;
     }
-    fflush(stderr);
+    FLUSH_LOG;
 
     errno = saved_errno;
 }
@@ -80,12 +80,12 @@ testmultiwait(void)
             LOG_EXPR_INT(issignalblocked(SIGCHLD));
             LOG_EXPR_INT(sigismember(&suspend_set, SIGCHLD));
             LOG_INFO("Running suspend.");
-            fflush(stderr);
+            FLUSH_LOG;
             sigsuspend(&suspend_set);
             LOG_INFO("After suspend.");
             LOG_EXPR_INT(issignalblocked(SIGCHLD));
-            fprintf(stderr, "\n\n");
-            fflush(stderr);
+            LOG_NEWLINE;
+            FLUSH_LOG;
         }
         unblocksigchld(&suspend_set);
     }

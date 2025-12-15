@@ -32,6 +32,8 @@ int issignalblocked(int signo);
 	#define DEBUG_PRINT(fmt, ...) \
 		DEBUG_COLOR_PRINT("0", fmt, ##__VA_ARGS__)
 
+    #define LOG_NEWLINE fprintf(stderr, "\n")
+    #define FLUSH_LOG fflush(stderr);
     #define LOG_INFO(fmt, ...) DEBUG_COLOR_PRINT(CYAN_COLOR_CODE, "INFO: " fmt, ##__VA_ARGS__)
     #define LOG_ERROR(fmt, ...) DEBUG_COLOR_PRINT(RED_COLOR_CODE, "ERROR: " fmt, ##__VA_ARGS__)
 
@@ -41,6 +43,8 @@ int issignalblocked(int signo);
     #define LOG_EXPR_INT(expr) LOG_INFO(#expr " = %d", expr)
 #else
     #define DEBUG_PRINT(...) NOP
+    #define LOG_NEWLINE NOP
+    #define FLUSH_LOG NOP
     #define LOG_INFO(...) NOP
     #define LOG_ERROR(...) NOP
 

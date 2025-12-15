@@ -10,6 +10,7 @@
 #include <signal.h>
 #include <assert.h>
 #include <stdio.h>
+#include <errno.h>
 
 typedef struct childstatus {
     pid_t pid;
@@ -39,8 +40,8 @@ blocksigchld(void)
 
     if (sigchld_block_counter++ == 0) {
         sigaddset(&temporary_set, SIGCHLD);
-        // LOG_EXPR_INT(sigismember(&temporary_set, SIGCHLD));
         LOG_INFO("Blocking SIGCHLD.");
+        FLUSH_LOG;
     }
 
     sigprocmask(SIG_BLOCK, &temporary_set, &original_set);
@@ -52,6 +53,7 @@ unblocksigchld(const sigset_t *original_set)
 {
     if (--sigchld_block_counter == 0) {
         LOG_INFO("Unblocking SIGCHLD.");
+        FLUSH_LOG;
         assert(sigismember(original_set, SIGCHLD) == 0);
         sigprocmask(SIG_SETMASK, original_set, NULL);
     }
@@ -140,14 +142,13 @@ printpendingbgchildrenstatuses(void)
 void
 chldsigaction(int sig, siginfo_t *info, void *ucontext)
 {
+    int saved_errno = errno;
     ++sigchld_block_counter;
-    LOG_EXPR_INT(issignalblocked(SIGCHLD));
     assert(sig == SIGCHLD);
 
     pid_t child_pid;
     int wstatus;
     while ((child_pid = waitpid(-1, &wstatus, WNOHANG)) > 0) {
-        LOG_INFO("child_pid = %d", child_pid);
         childstatus new_child_status;
         new_child_status.pid = child_pid;
         new_child_status.terminated_by_signal = WIFSIGNALED(wstatus);
@@ -156,13 +157,14 @@ chldsigaction(int sig, siginfo_t *info, void *ucontext)
 
         const bool fg_child = isforegroundprocess(child_pid);
         if (fg_child) {
-            // TODO FIXME Assuming that the child has exited/terminated/etc. in some way.
             --running_fg_children_cnt;
+            assert(running_fg_children_cnt >= 0);
         } else {
             addpendingbgchildstatus(new_child_status);
         }
     }
     --sigchld_block_counter;
+    errno = saved_errno;
 }
 
 void
@@ -191,19 +193,19 @@ revertdefaultsignalhandlers(void)
 }
 
 void
-waitforforegroundprocessestofinish(void)
+waitforforegroundprocessestofinish(const sigset_t *sigchld_unblocked_set)
 {
-    LOG_INFO("Before block.");
-    LOG_EXPR_INT(issignalblocked(SIGCHLD));
-    sigset_t original_set = blocksigchld();
-    LOG_INFO("After block.");
     LOG_EXPR_INT(issignalblocked(SIGCHLD));
     while (running_fg_children_cnt > 0) {
-        LOG_INFO("Before iteration.");
+        LOG_INFO("Before iteration. Children left = %d", running_fg_children_cnt);
         LOG_EXPR_INT(issignalblocked(SIGCHLD));
-        LOG_EXPR_INT(sigismember(&original_set, SIGCHLD));
-        sigsuspend(&original_set);
+        LOG_EXPR_INT(sigismember(sigchld_unblocked_set, SIGCHLD));
+        FLUSH_LOG;
+        LOG_INFO("Running suspend.");
+        sigsuspend(sigchld_unblocked_set);
         LOG_INFO("After suspend.");
+        LOG_EXPR_INT(issignalblocked(SIGCHLD));
+        LOG_NEWLINE;
+        FLUSH_LOG;
     }
-    unblocksigchld(&original_set);
 }

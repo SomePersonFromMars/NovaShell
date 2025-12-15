@@ -305,6 +305,12 @@ executepipeline(pipeline * pipeline)
     int infd = STDIN_FILENO;
     commandseq * start = pipeline->commands;
     commandseq * cs = start;
+
+    LOG_INFO("Before block.");
+    LOG_EXPR_INT(issignalblocked(SIGCHLD));
+    sigset_t original_set = blocksigchld();
+    LOG_INFO("After block.");
+
     do {
         assert(cs && iscommandvalid(cs->com));
 
@@ -344,7 +350,8 @@ executepipeline(pipeline * pipeline)
         for (int i = 0; i < fg_children_cnt; ++i)
             LOG_EXPR_INT(fg_children[i]);        
     #endif
-    waitforforegroundprocessestofinish();
+    waitforforegroundprocessestofinish(&original_set);
+    unblocksigchld(&original_set);
 }
 
 void

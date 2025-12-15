@@ -12,6 +12,6 @@ void printpendingbgchildrenstatuses(void);
 void revertdefaultsignalhandlers(void);
 sigset_t blocksigchld(void);
 void unblocksigchld(const sigset_t *original_set);
-void waitforforegroundprocessestofinish(void);
+void waitforforegroundprocessestofinish(const sigset_t *sigchld_unblocked_set);
 
 #endif /* !_SUBPROCESSESMANAGER_H_ */
