@@ -185,11 +185,15 @@ setupsubprocesseswatcherandsignals(void)
 }
 
 void
-revertdefaultsignalhandlers(void)
+revertdefaultsignalhandlersandmasks(void)
 {
     struct sigaction act;
     act.sa_handler = SIG_DFL;
     sigaction(SIGINT, &act, NULL);
+
+    sigset_t empty_mask;
+    sigemptyset(&empty_mask);
+    sigprocmask(SIG_BLOCK, &empty_mask, NULL);
 }
 
 void

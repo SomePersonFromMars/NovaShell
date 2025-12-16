@@ -9,7 +9,7 @@ void setupsubprocesseswatcherandsignals(void);
 // `new_foreground_processes_list` is a 0-ended array
 void setforegroundprocesses(pid_t new_foreground_processes_list[], int new_running_fg_children_count);
 void printpendingbgchildrenstatuses(void);
-void revertdefaultsignalhandlers(void);
+void revertdefaultsignalhandlersandmasks(void);
 sigset_t blocksigchld(void);
 void unblocksigchld(const sigset_t *original_set);
 void waitforforegroundprocessestofinish(const sigset_t *sigchld_unblocked_set);

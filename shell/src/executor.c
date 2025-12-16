@@ -143,7 +143,7 @@ executeexternalcommand(char **argv, inoutdescriptors descr, bool new_session)
 
     pid_t child_pid = fork();
     if (child_pid == 0) {
-        revertdefaultsignalhandlers();
+        revertdefaultsignalhandlersandmasks();
 
         if (new_session && setsid() == -1)
             LOG_ERROR("Error while creating a new session");
