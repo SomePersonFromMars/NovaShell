@@ -1,4 +1,4 @@
-#include "common.h"
+#include "debugging.h"
 
 #include <signal.h>
 #include <errno.h>

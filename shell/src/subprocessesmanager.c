@@ -1,5 +1,5 @@
 #include "subprocessesmanager.h"
-#include "common.h"
+#include "debugging.h"
 
 #include <bits/types/sigset_t.h>
 #include <stdlib.h>

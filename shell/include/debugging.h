@@ -1,13 +1,8 @@
-#ifndef _COMMON_H_
-#define _COMMON_H_
-
-#include <limits.h>
+#ifndef _DEBUGGING_H_
+#define _DEBUGGING_H_
 
 int countopenfds(void);
 int issignalblocked(int signo);
-
-#define INVALID_ID SIZE_MAX
-#define NOP ((void)0)
 
 #ifdef DEBUGPRINT
     #include <stdio.h>
@@ -63,4 +58,4 @@ int issignalblocked(int signo);
     #define BREAKPOINT_IF(expr) NOP
 #endif
 
-#endif /* !_COMMON_H_ */
+#endif /* !_DEBUGGING_H_ */

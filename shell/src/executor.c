@@ -4,7 +4,7 @@
 #include "builtins.h"
 #include "config.h"
 #include "siparse.h"
-#include "common.h"
+#include "debugging.h"
 
 #include <errno.h>
 #include <stdio.h>

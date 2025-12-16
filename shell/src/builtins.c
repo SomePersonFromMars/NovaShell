@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 
-#include "common.h"
+#include "debugging.h"
 #include "argsparser.h"
 #include "config.h"
 #include "builtins.h"
