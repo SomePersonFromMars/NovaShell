@@ -2,6 +2,7 @@
 #define _CONFIG_H_
 
 #define MAX_LINE_LENGTH 2048
+#define DEFAULT_FILE_MODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH)
 
 #define SYNTAX_ERROR_STR "Syntax error."
 

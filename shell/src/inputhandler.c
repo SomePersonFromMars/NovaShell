@@ -10,7 +10,7 @@
 #include <string.h>
 #include <assert.h>
 
-#include "utils.h"
+#include "common.h"
 #include "debugging.h"
 #include "config.h"
 #include "siparse.h"

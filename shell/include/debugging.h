@@ -1,6 +1,8 @@
 #ifndef _DEBUGGING_H_
 #define _DEBUGGING_H_
 
+#include "common.h"
+
 int countopenfds(void);
 int issignalblocked(int signo);
 
