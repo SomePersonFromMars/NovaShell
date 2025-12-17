@@ -8,15 +8,6 @@ int issignalblocked(int signo);
 
 #ifdef DEBUGPRINT
     #include <stdio.h>
-    #define RESET_COLOR_CODE	"0"
-    #define BLACK_COLOR_CODE	"30"
-	#define RED_COLOR_CODE		"31"
-	#define GREEN_COLOR_CODE	"32"
-	#define YELLOW_COLOR_CODE	"33"
-	#define BLUE COLOR_CODE		"34"
-	#define MAGENTA_COLOR_CODE	"35"
-	#define CYAN_COLOR_CODE		"36"
-	#define WHITE_COLOR_CODE	"37"
 
     #define DEBUG_COLOR_PRINT(color_code, fmt, ...) \
         fprintf(stderr, \

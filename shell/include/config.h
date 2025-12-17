@@ -9,6 +9,16 @@
 #define BUILTIN_FAILURE 1
 #define EXEC_FAILURE 127
 
-#define PROMPT_STR "$ "
+#define PROMPT_FMT_STR ( \
+        "\x1b[" BLUE_COLOR_CODE "m" \
+        "[NovaShell]" \
+        "\x1b[0m" \
+        \
+        "\x1b[" GRAY_COLOR_CODE "m" \
+        " %s" \
+        "\x1b[0m" \
+        \
+        "$ " \
+        )
 
 #endif /* !_CONFIG_H_ */

@@ -1,3 +1,4 @@
+#include <linux/limits.h>
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,12 +31,33 @@ static size_t input_size;
 static ssize_t bytes_read;
 bool ignore_next_line;
 
+static char path_buffer[PATH_MAX];
+
+// May return a pointer to statically allocated buffer.
+static char*
+getnicecwd(void)
+{
+    char * const original_path = get_current_dir_name();
+    char * const home_path = secure_getenv("HOME");
+    assert(original_path);
+    const size_t home_path_len = (home_path ? strlen(home_path) : 0);
+    const size_t original_path_len = strlen(original_path);
+    if (home_path && strncmp(original_path, home_path, home_path_len) == 0) {
+        const size_t rest_len = original_path_len - home_path_len;
+        path_buffer[0]='~';
+        memcpy(path_buffer + 1, original_path + home_path_len, rest_len + 1);
+        return path_buffer;
+    } else {
+        return original_path;
+    }
+}
+
 void
 printprompt(void)
 {
     if (!interactive_mode) return;
     printpendingbgchildrenstatuses();
-    fputs(PROMPT_STR, stdout);
+    printf(PROMPT_FMT_STR, getnicecwd());
     fflush(stdout);
 }
 

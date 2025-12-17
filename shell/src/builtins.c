@@ -23,6 +23,7 @@ builtin_pair builtins_table[]={
 	{"exit",	&exitbuiltin},
 	{"lecho",	&echo},
 	{"lcd",		&cd},
+	{"cd",		&cd},
 	{"lkill",	&killbuiltin},
 	{"lls",		&ls},
 	{NULL,NULL}

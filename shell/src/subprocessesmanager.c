@@ -126,7 +126,7 @@ printpendingbgchildrenstatuses(void)
     const sigset_t original_set = blocksigchld();
     childstatus *status;
     while ((status = getpendingbgchildstatus())) {
-        if (status->terminated_by_signal) {
+        if (!status->terminated_by_signal) {
             fprintf(stdout,
                 "Background process %d terminated. (exited with status %d)\n",
                 status->pid, status->exit_status);
