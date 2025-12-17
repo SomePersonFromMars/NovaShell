@@ -32,9 +32,9 @@ CFLAGS=-I$(INC_DIR) $(DEBUG_FLAGS) $(DEFINES)
 
 
 COMMON_SRCS=utils.c builtins.c executor.c execprepare.c subprocessesmanager.c inputhandler.c argsparser.c debugging.c
-SHELL_SRCS=$(COMMON_SRCS) mshell.c
+SHELL_SRCS=$(COMMON_SRCS) novashell.c
 TESTS_SRCS=$(COMMON_SRCS) tests.c
-SRCS=$(COMMON_SRCS) mshell.c tests.c
+SRCS=$(COMMON_SRCS) novashell.c tests.c
 
 COMMON_OBJS:=$(COMMON_SRCS:.c=.o)
 COMMON_OBJS:=$(addprefix $(OBJ_DIR)/,$(COMMON_OBJS))
@@ -46,9 +46,9 @@ OBJS:=$(SRCS:.c=.o)
 OBJS:=$(addprefix $(OBJ_DIR)/,$(OBJS))
 
 .PHONY: all
-all: check_dirs $(BIN_DIR)/mshell $(BIN_DIR)/tests
+all: check_dirs $(BIN_DIR)/novash $(BIN_DIR)/tests
 
-$(BIN_DIR)/mshell: $(SHELL_OBJS) $(OBJ_DIR)/siparse.a
+$(BIN_DIR)/novash: $(SHELL_OBJS) $(OBJ_DIR)/siparse.a
 	$(CC) $(CFLAGS) $(SHELL_OBJS) $(OBJ_DIR)/siparse.a -o $@ 
 
 $(BIN_DIR)/tests: $(TESTS_OBJS) $(OBJ_DIR)/siparse.a
@@ -67,7 +67,7 @@ check_dirs:
 
 .PHONY: clean
 clean:
-	rm -f $(BIN_DIR)/mshell $(OBJS) 2>/dev/null || true
+	rm -f $(BIN_DIR)/novash $(OBJS) 2>/dev/null || true
 	rm compile_commands.json 2>/dev/null || true
 
 .PHONY: full_clean
