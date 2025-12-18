@@ -33,14 +33,12 @@ CFLAGS=-I$(INC_DIR) $(DEBUG_FLAGS) $(DEFINES)
 
 COMMON_SRCS=utils.c builtins.c executor.c execprepare.c subprocessesmanager.c inputhandler.c argsparser.c debugging.c
 SHELL_SRCS=$(COMMON_SRCS) novashell.c
-TESTS_SRCS=$(COMMON_SRCS) tests.c
 SRCS=$(COMMON_SRCS) novashell.c tests.c
 
 COMMON_OBJS:=$(COMMON_SRCS:.c=.o)
 COMMON_OBJS:=$(addprefix $(OBJ_DIR)/,$(COMMON_OBJS))
 SHELL_OBJS:=$(SHELL_SRCS:.c=.o)
 SHELL_OBJS:=$(addprefix $(OBJ_DIR)/,$(SHELL_OBJS))
-TESTS_OBJS:=$(TESTS_SRCS:.c=.o)
 TESTS_OBJS:=$(addprefix $(OBJ_DIR)/,$(TESTS_OBJS))
 OBJS:=$(SRCS:.c=.o)
 OBJS:=$(addprefix $(OBJ_DIR)/,$(OBJS))
@@ -49,12 +47,11 @@ OBJS:=$(addprefix $(OBJ_DIR)/,$(OBJS))
 all: check_dirs $(BIN_DIR)/novash $(BIN_DIR)/tests
 
 $(BIN_DIR)/novash: $(SHELL_OBJS) $(OBJ_DIR)/siparse.a
+	mkdir -p $(BIN_DIR)
 	$(CC) $(CFLAGS) $(SHELL_OBJS) $(OBJ_DIR)/siparse.a -o $@ 
 
-$(BIN_DIR)/tests: $(TESTS_OBJS) $(OBJ_DIR)/siparse.a
-	$(CC) $(CFLAGS) $(TESTS_OBJS) $(OBJ_DIR)/siparse.a -o $@ 
-
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	mkdir -p $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJ_DIR)/siparse.a:

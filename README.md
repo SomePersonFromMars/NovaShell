@@ -17,7 +17,6 @@ A custom shell implementation developed as part of the **Operating Systems** cou
 ### Building NovaShell
 ```bash
 cd shell
-mkdir bin
 make bin/novash
 ```
 
