@@ -11,8 +11,9 @@ A custom shell implementation developed as part of the **Operating Systems** cou
 ## Getting Started
 
 ### Prerequisites
-- A Linux-based operating system
-- GCC compiler or equivalent
+```txt
+gcc make byacc lex
+```
 
 ### Building NovaShell
 ```bash
